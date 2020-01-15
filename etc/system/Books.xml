@@ -1,0 +1,24 @@
+<books>
+	<book>
+		<id>book:tutorial:basics</id>
+		<title>ROC Basics</title>
+		<desc>A tutorial introducing the Basics of ROC</desc>
+		<author/>
+		<publisher/>
+		<date/>
+		<modified/>
+		<icon/>
+		<keywords/>
+		<toc>
+			<item id="doc:tutorial:basics:title">
+				<item id="doc:tutorial:basics:part1"/>
+				<item id="doc:tutorial:basics:part2"/>
+				<item id="doc:tutorial:basics:part3"/>
+				<item id="doc:tutorial:basics:part4"/>
+				<item id="doc:tutorial:basics:part5"/>
+				<item id="doc:tutorial:basics:part6"/>
+			</item>
+			<item id="doc:tutorial:basics:postscript"/>
+		</toc>
+	</book>
+</books>

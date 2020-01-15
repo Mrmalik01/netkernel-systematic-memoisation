@@ -1,0 +1,388 @@
+<module version="2.0">
+	<meta>
+		<identity>
+			<uri>urn:org:netkernel:java:tutorial:basics</uri>
+			<version>1.3.6</version>
+		</identity>
+		<info>
+			<name>KHIZAR - TEST JAVA</name>
+			<description>Tutorial illustrating the basic building blocks of an ROC application</description>
+		</info>
+	</meta>
+	<system>
+		<dynamic />
+	</system>
+
+	<!--
+	 ****************
+	PART 1: Map a static directory into the ROC address space.
+		
+		- when exposed to the HTTP transport this is a basic "Web Server" pattern.
+	 ****************
+	 -->
+	<rootspace uri="urn:org:netkernel:java:tutorial:basics:part1" public="true">
+		<fileset>
+			<glob>tutorial/basics/part1/*</glob>
+		</fileset>
+		<import>
+			<uri>urn:org:netkernel:java:tutorial:basics:dynamic-import-impl</uri> <!-- Import the common library so that this space gets exposed to HTTP requests -->
+		</import>
+	</rootspace>
+
+
+	<!--
+	 ****************
+	PART 2: Map an ROC address space to a single endpoint - the "Servlet" pattern
+		
+		- when exposed to the HTTP transport this is a basic "Servlet" pattern.
+	 ****************
+	 -->
+	<rootspace uri="urn:org:netkernel:java:tutorial:basics:part2" public="true">
+
+		<!--
+		Home page
+		-->
+
+		<accessor>
+			<grammar>res:/homepage</grammar>
+			<class>tutorial.basics.part2.html.Homepage</class>
+		</accessor>
+		<accessor>
+			<grammar>
+				<regex>res:/algorithmtest/(naive|extrinsic)/(15|20|25|30|35|40)</regex>
+			</grammar>
+			<class>tutorial.basics.algorithms.AlgorithmOrchestrator</class>
+		</accessor>
+		<accessor>
+			<grammar><regex>res:/algorithmtest/both/(15|20|25|30|35|40)</regex></grammar>
+			<class>tutorial.basics.algorithms.AlgorithmOrchestrator</class>
+		</accessor>
+
+		<accessor>
+			<grammar>
+				res:/java/tutorials
+			</grammar>
+			<class>tutorial.basics.part2.ServletPatternAccessor</class>
+		</accessor>
+		<accessor>
+			<grammar>
+				<active>
+					<identifier>active:Fib</identifier>
+					<argument name="num" min="1" max="1"/>
+					<argument name="steps" min="1" max="1" />
+				</active>
+
+			</grammar>
+			<class>tutorial.basics.algorithms.FibonacciJava</class>
+		</accessor>
+		<accessor>
+			<grammar>
+				res:/roc/algorithm/fibtest
+			</grammar>
+			<class>tutorial.basics.algorithms.FibTest</class>
+		</accessor>
+		<import>
+			<uri>urn:org:netkernel:java:tutorial:basics:dynamic-import-impl</uri>
+		</import>
+	</rootspace>
+
+	<!--
+	 ****************
+	PART 3: Map your filesystem into the ROC address space - the classic "Unix Mount" pattern
+	 ****************
+	 -->
+	<!--  Uncomment this block to try - but be aware that this exposes your whole filesystem to the HTTP server!!!!!!
+	<rootspace uri="urn:org:netkernel:java:tutorial:basics:part3" public="true">
+		<mapper>
+			<config>
+				<endpoint>
+					<grammar>res:/tutorial/basics/part3/<group name="path"><regex type="anything"/></group></grammar>
+					<request>
+						<identifier>file:///[[arg:path]]</identifier>
+					</request>
+				</endpoint>
+			</config>
+			<space>
+				<import>
+					<uri>urn:org:netkernel:ext:layer1</uri>
+				</import>
+			</space>
+		</mapper>
+		<import>
+			<uri>urn:org:netkernel:java:tutorial:basics:dynamic-import-impl</uri>		
+		</import>
+	</rootspace>
+	-->
+
+	<!--
+	 ****************
+	PART 3b: Map the World Wide Web into the ROC address space - the "General Mount" pattern
+	 ****************
+	 -->
+	<rootspace uri="urn:org:netkernel:java:tutorial:basics:part3b" public="true">
+		<mapper>
+			<config>
+				<endpoint>
+					<grammar>
+						<simple>res:/tutorial/basics/part3b/{path}</simple>
+					</grammar>
+					<request>
+						<identifier>http://[[arg:path]]</identifier>
+					</request>
+				</endpoint>
+			</config>
+			<space>
+				<import>
+					<uri>urn:org:netkernel:client:http</uri>
+				</import>
+			</space>
+		</mapper>
+		<import>
+			<uri>urn:org:netkernel:java:tutorial:basics:dynamic-import-impl</uri>
+		</import>
+	</rootspace>
+
+	<!--
+	 ****************
+	PART 4: Map an existing mapping to another space - the "Alias" pattern
+	 ****************
+	 -->
+	<rootspace uri="urn:org:netkernel:java:tutorial:basics:part4" public="true">
+		<mapper>
+			<config>
+				<endpoint>
+					<grammar>
+						<simple>res:/mnt/earth-wide-web/{path}</simple>
+					</grammar>
+					<request>
+						<identifier>res:/tutorial/basics/part3b/[[arg:path]]</identifier>
+					</request>
+				</endpoint>
+			</config>
+			<space>
+				<import>
+					<uri>urn:org:netkernel:java:tutorial:basics:part3b</uri>
+				</import>
+			</space>
+		</mapper>
+		<import>
+			<uri>urn:org:netkernel:java:tutorial:basics:dynamic-import-impl</uri>
+		</import>
+	</rootspace>
+
+
+	<!--
+	 ****************
+	PART 5: Map a Turing machine into the ROC address space - the "Script" pattern
+	 ****************
+	 -->
+	<rootspace uri="urn:org:netkernel:java:tutorial:basics:part5a" public="true">
+		<mapper>
+			<config>
+				<endpoint>
+					<grammar>
+						<simple>res:/tutorial/basics/part5a/{path}</simple>
+					</grammar>
+					<request>
+						<identifier>active:groovy</identifier>
+						<argument name="operator">res:/tutorial/basics/part5/script.gy</argument>
+						<argument name="path">arg:path</argument>
+					</request>
+				</endpoint>
+			</config>
+			<space>
+				<fileset>
+					<glob>tutorial/basics/part5/*</glob>
+				</fileset>
+				<import>
+					<uri>urn:org:netkernel:lang:groovy</uri>
+				</import>
+			</space>
+		</mapper>
+		<import>
+			<uri>urn:org:netkernel:java:tutorial:basics:dynamic-import-impl</uri>
+		</import>
+	</rootspace>
+
+	<rootspace uri="urn:org:netkernel:java:tutorial:basics:part5b" public="true">
+		<mapper>
+			<config>
+				<endpoint>
+					<grammar>
+						<simple>res:/tutorial/basics/part5b/{path}</simple>
+					</grammar>
+					<request>
+						<identifier>active:groovy</identifier>
+						<argument name="operator">
+							<script>
+								<![CDATA[
+								url=context.source("httpRequest:/url", String.class);
+								method=context.source("httpRequest:/method", String.class);
+								result="Hello Code State Transfer World"+
+										"\nRequest Identifier = "+context.getThisRequest().getIdentifier()+
+										"\npath argument = "+context.getThisRequest().getArgumentValue("path")+
+										"\nHTTP Method = "+method+
+										"\nHTTP URL = "+url;
+								context.createResponseFrom(result);
+								]]>
+							</script>
+						</argument>
+						<argument name="path">arg:path</argument>
+					</request>
+				</endpoint>
+			</config>
+			<space>
+				<fileset>
+					<glob>tutorial/basics/part5/*</glob>
+				</fileset>
+				<import>
+					<uri>urn:org:netkernel:lang:groovy</uri>
+				</import>
+			</space>
+		</mapper>
+		<import>
+			<uri>urn:org:netkernel:java:tutorial:basics:dynamic-import-impl</uri>
+		</import>
+	</rootspace>
+
+	<rootspace uri="urn:org:netkernel:java:tutorial:basics:part5c" public="true">
+		<mapper>
+			<config>
+				<endpoint>
+					<grammar>
+						<simple>res:/tutorial/basics/part5c/{path}</simple>
+					</grammar>
+					<request>
+						<identifier>active:java</identifier>
+						<argument name="class">tutorial.basics.part2.ServletPatternAccessor</argument>
+					</request>
+				</endpoint>
+			</config>
+			<space>
+				<fileset>
+					<glob>tutorial/basics/part5/*</glob>
+				</fileset>
+				<import>
+					<uri>urn:org:netkernel:lang:groovy</uri>
+				</import>
+				<import>
+					<uri>urn:org:netkernel:ext:layer1</uri>
+				</import>
+			</space>
+		</mapper>
+		<import>
+			<uri>urn:org:netkernel:java:tutorial:basics:dynamic-import-impl</uri>
+		</import>
+	</rootspace>
+
+	<rootspace uri="urn:org:netkernel:java:tutorial:basics:part5d" public="true">
+		<mapper>
+			<config>
+				<endpoint>
+					<grammar>
+						<simple>res:/tutorial/basics/part5d/{path}</simple>
+					</grammar>
+					<request>
+						<identifier>active:groovy</identifier>
+						<argument name="operator">data:text/plain,context.createResponseFrom("Turing%20Machine!")</argument>
+					</request>
+				</endpoint>
+			</config>
+			<space>
+				<fileset>
+					<glob>tutorial/basics/part5/*</glob>
+				</fileset>
+				<import>
+					<uri>urn:org:netkernel:lang:groovy</uri>
+				</import>
+			</space>
+		</mapper>
+		<import>
+			<uri>urn:org:netkernel:java:tutorial:basics:dynamic-import-impl</uri>
+		</import>
+	</rootspace>
+
+
+	<rootspace uri="urn:org:netkernel:java:tutorial:basics:part6" public="true">
+		<pluggable-overlay>
+			<preProcess>
+				<identifier>active:intercept</identifier>
+				<argument name="request">arg:request</argument>
+			</preProcess>
+			<space>
+				<mapper>
+					<config>
+						<endpoint>
+							<grammar>
+								<simple>res:/mnt/nk-wide-web/{path}</simple>
+							</grammar>
+							<request>
+								<identifier>http://[[arg:path]]</identifier>
+							</request>
+						</endpoint>
+						<endpoint>
+							<grammar>
+								<active>
+									<identifier>active:intercept</identifier>
+									<argument name="request" />
+								</active>
+							</grammar>
+							<request>
+								<identifier>active:groovy</identifier>
+								<argument name="operator">res:/tutorial/basics/part6/intercept.gy</argument>
+								<argument name="request">arg:request</argument>
+							</request>
+						</endpoint>
+						<endpoint>
+							<grammar>access-blocked</grammar>
+							<request>
+								<identifier>res:/tutorial/basics/part6/access-blocked.html</identifier>
+							</request>
+						</endpoint>
+					</config>
+					<space>
+						<import>
+							<uri>urn:org:netkernel:client:http</uri>
+						</import>
+						<fileset>
+							<glob>tutorial/basics/part6/*</glob>
+						</fileset>
+						<import>
+							<uri>urn:org:netkernel:lang:groovy</uri>
+						</import>
+					</space>
+				</mapper>
+			</space>
+		</pluggable-overlay>
+		<import>
+			<uri>urn:org:netkernel:java:tutorial:basics:dynamic-import-impl</uri>
+		</import>
+	</rootspace>
+
+
+	<!--
+	******************************************************************
+	Some Infrastructure spaces - you don't need to worry about these...
+	
+		Publish the module documentation so that is gets discovered in the documentation system
+		Declare a common library space - for dynamic import etc.
+	******************************************************************  
+	 -->
+	<rootspace uri="urn:org:netkernel:java:tutorial:basics:docs">
+		<!--Declare the documentation for publication into the doc system -->
+		<fileset>
+			<regex>res:/etc/system/(Books|Docs).xml</regex>
+		</fileset>
+		<fileset>
+			<regex>res:/doc/.*</regex>
+		</fileset>
+	</rootspace>
+	<rootspace uri="urn:org:netkernel:java:tutorial:basics:dynamic-import-impl">
+		<!-- Declare the dynamic import resource - so that we get pulled into the front-end fulcrum and can see HTTP requests -->
+		<fileset>
+			<glob>etc/system/SimpleDynamicImportHook.xml</glob>
+		</fileset>
+
+	</rootspace>
+
+</module>

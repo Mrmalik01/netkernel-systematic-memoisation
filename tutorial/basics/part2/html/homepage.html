@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Resource-oriented computing test</title>
+    <style>
+        html {
+            background-color: gainsboro;
+        }
+
+        body {
+            font-family: "Neuzeit Grotesk", Arial, Helvetica, sans-serif;
+            width: 80%;
+            height: 100%;
+            margin: auto;
+            background-color: white;
+            padding: 20px;
+        }
+
+        #fib-test {
+            text-align: center;
+        }
+
+        #heading {
+            text-align: center;
+            font-size: larger;
+            font-weight: bolder;
+        }
+
+        #sub-heading {
+            font-size: large;
+            font-weight: normal;
+        }
+
+        #content {
+            text-align: left;
+
+        }
+
+        .button {
+            background-color: #4CAF50;
+            /* Green */
+            border: none;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 13px;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+
+        .button1 {
+            border-radius: 2px;
+        }
+
+        #result-compare {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        #left {
+            width: 30%;
+        }
+
+        #center {
+            width: 30%;
+            color: white;
+            background-color: #4CAF50;
+            padding: 10px;
+            border-radius: 10px;
+            margin-right: 20px;
+        }
+
+        #faster-result {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <p id="heading">Resource-oriented computing demo</p>
+    <div id="fib-test">
+        <h4 id="sub-heading">Fibonacci algorithm test</h4>
+        <hr>
+        <div id="content">
+            <p>Select Algorithm - <input type="radio" name="radio1" id="radio1" value="naive" checked /> Naive Fibonacci
+                <input type="radio" name="radio1" id="radio2" value="extrinsic" />Extrinsic Fibonacci</p>
+            <p>Select the dataset size : </p>
+            <select name="dataset" id="dataset">
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="25">25</option>
+                <option value="30">30</option>
+                <option value="35">35</option>
+                <option value="40">40</option>
+            </select>
+            <br>
+            <br>
+            <button name="Start" class="button button1" onclick="compute()">Compute</button>
+            <br>
+            <button name="compare" class="button button2" onclick="compare()">Compare Both</button>
+            <p id="result"></p>
+            <p id="compare-result"></p>
+        </div>
+    </div>
+
+    <script>
+
+        function compare() {
+            var selector = document.getElementById("dataset");
+            var value = selector.item(selector.selectedIndex).value;
+
+            let urlNaive = `/algorithmtest/naive/${value}`;
+            let urlExtrinsic = `/algorithmtest/extrinsic/${value}`;
+
+            var resultNaive = JSON.parse(httpGet(urlNaive));
+            var resultExtrinsic = JSON.parse(httpGet(urlExtrinsic));
+
+            let N_time = parseInt(resultNaive.time);
+            let N_result = resultNaive.result;
+            let N_steps = parseInt(resultNaive.steps);
+
+            let E_time = parseInt(resultExtrinsic.time);
+            let E_result = resultExtrinsic.result;
+            let E_steps = parseInt(resultExtrinsic.steps);
+
+            let faster = "";
+            let fasterPercentage = 0;
+            let stepsPercentage = 0;
+            if (N_time < E_time) {
+                faster = "Naive";
+                fasterPercentage = (E_time / N_time);
+                stepsPercentage = (E_steps / N_steps);
+                console.log(`Faster tooks this much less steps ${stepsPercentage}%`);
+                console.log(`Faster - ${faster} \nPercentage - " + ${fasterPercentage}`);
+            } else {
+                faster = "Extrinsic";
+                fasterPercentage = (N_time / E_time);
+                stepsPercentage = (N_steps / E_steps);
+                console.log(`Faster tooks this much less steps ${stepsPercentage}%`);
+                console.log(`Faster - ${faster} \nPercentage - " + ${fasterPercentage}`);
+            }
+
+            var result = `<b>Result : ---- </b><br><div id="result-compare">
+                            <div id="left" style="order: 1">
+                                <p><b>Naive algorithm ---- </b></p>
+                                <p>Time - ${test(N_time)} nano-seconds</p>
+                                <p>Total steps - ${test(N_steps)} steps</p>
+                                <p>Value - ${N_result}</p>
+                            </div>
+                            <div id="right" style="order: 3">
+                                <p><b>Extrinsic algorithm ---- </b></p>
+                                <p>Time - ${test(E_time)} nano-seconds</p>
+                                <p>Total steps - ${test(E_steps)} steps</p>
+                                <p>Value - ${E_result}</p>
+                            </div>
+                            <div id="center" style="order: 2">
+                                <p><b>Comparision result ---- </b></p>
+                                <p>Fastest - ${faster}</p>
+                                <p>Factor (by) - <span id="faster-result">${fasterPercentage.toFixed(2)}%</span></p>
+                                <p>${faster} - took ${stepsPercentage} % less steps</p>
+                        </div>`;
+            console.log(result);
+            document.getElementById("result").style.display = "none";
+            var printer = document.getElementById("compare-result");
+            printer.style.display = "block";
+            printer.innerHTML = result;
+        }
+        console.log("version 2.8");
+        function httpGet(theUrl) {
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open("GET", theUrl, false);
+            xmlHttp.send(null);
+            return xmlHttp.responseText;
+        }
+        function test(labelValue) {
+
+            return Math.abs(Number(labelValue)) >= 1.0e+9
+
+                ? Math.abs(Number(labelValue)) / 1.0e+9 + "B"
+
+                : (Math.abs(Number(labelValue))).toFixed(2) >= 1.0e+6
+
+                    ? (Math.abs(Number(labelValue)) / 1.0e+6).toFixed(2) + "M"
+
+                    : Math.abs(Number(labelValue)) >= 1.0e+3
+
+                        ? (Math.abs(Number(labelValue)) / 1.0e+3).toFixed(2) + "K"
+
+                        : Math.abs(Number(labelValue)).toFixed(2);
+
+        }
+        function compute() {
+            console.log("version - 2.2");
+            var selector = document.getElementById("dataset");
+            var value = selector.item(selector.selectedIndex).value;
+
+            var selectedAlgorithm = "naive";
+            var algorithmSelector = document.getElementsByName("radio1");
+            for (let x = 0; x < algorithmSelector.length; x++) {
+                if (algorithmSelector[x].checked) {
+                    selectedAlgorithm = algorithmSelector[x].value;
+                }
+            }
+            console.log("Selected value - " + value);
+            console.log("Selected algorithm - " + selectedAlgorithm);
+            var result = JSON.parse(httpGet("/algorithmtest/" + selectedAlgorithm + "/" + value));
+            time = test(result.time);
+            var steps = test(result.steps);
+            var printer = document.getElementById("result");
+            printer.style.display = "block";
+            document.getElementById("compare-result").style.display = "none";
+            document.getElementById("result").innerHTML = "<b>Result :</b> \n" + result.type + " took - " + time + " nano-seconds" + " and " + steps + " steps";
+        }
+    </script>
+</body>
+
+</html>

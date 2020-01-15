@@ -1,0 +1,17 @@
+import org.netkernel.layer0.nkf.*;
+
+requestOuter=context.source("arg:request", INKFRequestReadOnly.class);
+
+requestInner=null;
+
+identifier=requestOuter.getIdentifier();
+if(identifier.indexOf("netkernel")>=0)
+{	requestInner=requestOuter.getIssuableClone();
+	context.logRaw(INKFRequestContext.LEVEL_INFO, "nk-wide-web mapped request: "+identifier);		
+}
+else
+{	requestInner=context.createRequest("access-blocked");
+	context.logRaw(INKFRequestContext.LEVEL_WARNING, "nk-wide-web request blocked: "+identifier);
+}
+
+context.createResponseFrom(requestInner);

@@ -1,0 +1,66 @@
+<docs>
+	<doc>
+		<id>doc:tutorial:basics:title</id>
+		<title>ROC Basics</title>
+		<desc>Tutorial introducing the basics of ROC</desc>
+		<uri>res:/doc/title.txt</uri>
+		<keywords/>
+	</doc>
+	
+	<doc>
+		<id>doc:tutorial:basics:part1</id>
+		<title>1. Basic Web Server</title>
+		<desc>Mapping a fileset to a web path</desc>
+		<uri>res:/doc/part1.txt</uri>
+		<keywords/>
+	</doc>
+	
+	<doc>
+		<id>doc:tutorial:basics:part2</id>
+		<title>2. Servlet Pattern</title>
+		<desc>Mapping a web path to a class</desc>
+		<uri>res:/doc/part2.txt</uri>
+		<keywords/>
+	</doc>
+	
+	<doc>
+		<id>doc:tutorial:basics:part3</id>
+		<title>3. Mount Pattern</title>
+		<desc>Mapping a space to a space</desc>
+		<uri>res:/doc/part3.txt</uri>
+		<keywords/>
+	</doc>
+	
+	<doc>
+		<id>doc:tutorial:basics:part4</id>
+		<title>4. Alias Pattern</title>
+		<desc>Mapping a space to a space</desc>
+		<uri>res:/doc/part4.txt</uri>
+		<keywords/>
+	</doc>
+	
+	<doc>
+		<id>doc:tutorial:basics:part5</id>
+		<title>5. Script Pattern</title>
+		<desc>Mapping to scripts</desc>
+		<uri>res:/doc/part5.txt</uri>
+		<keywords/>
+	</doc>
+	
+	<doc>
+		<id>doc:tutorial:basics:part6</id>
+		<title>6. Router Pattern</title>
+		<desc>Harnessing the power of overlays</desc>
+		<uri>res:/doc/part6.txt</uri>
+		<keywords/>
+	</doc>
+	
+	<doc>
+		<id>doc:tutorial:basics:postscript</id>
+		<title>Postscript</title>
+		<desc>Some closing thoughts on where to go next</desc>
+		<uri>res:/doc/postscript.txt</uri>
+		<keywords/>
+	</doc>
+	
+</docs>

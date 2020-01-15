@@ -1,0 +1,178 @@
+=Part 2 - Servlet Pattern =
+{callout}
+See  [[doc:tutorial:basics:title#Source Code|Source Code]] for
+how to find the module containing the source of these examples.
+{/callout}
+A long established technology is the Java Servlet.  A Servlet is a Java class that is bound to a web address
+and which receives web requests. We will show  how this pattern can
+be implemented in the NetKernel [[doc:logicalreference:module:title|Standard Module]].
+
+In the '''module.xml''' file we now move to the second rootspace declaration, 
+the one for '''urn:org:netkernel:tutorial:basics:part2'''. It looks like this :
+
+{xml}
+<rootspace uri="urn:org:netkernel:tutorial:basics:part2" public="true">
+	<accessor>
+		<grammar>res:/tutorial/basics/part2/<regex type="anything"/></grammar>
+		<class>tutorial.basics.part2.ServletPatternAccessor</class>
+	</accessor>
+	<import>
+		<uri>urn:org:netkernel:tutorial:basics:dynamic-import-impl</uri>		
+	</import>
+</rootspace>
+{/xml}
+
+==Play Time==
+
+You will see it contains a directory path '''/tutorial/basics/part2/''' which 
+contains a single Java class '''ServletPatternAccessor'''. 
+
+Click this link to try it out: [http://localhost:8080/tutorial/basics/part2/hello.txt|http://localhost:8080/tutorial/basics/part2/hello.txt].
+
+*To show this is calling live code, try changing final path.  For example try: [http://localhost:8080/tutorial/basics/part2/it-really-is-live|http://localhost:8080/tutorial/basics/part2/it-really-is-live]
+*That did not prove anything of course, so now try it with a final path all of your own :-)
+
+
+==Analysis==
+This space has the following declaration... 
+
+=== accessor ===
+
+{xml}
+<accessor>
+	<grammar>res:/tutorial/basics/part2/<regex type="anything"/></grammar>
+	<class>tutorial.basics.part2.ServletPatternAccessor</class>
+</accessor>
+{/xml}
+
+An [[doc:logicalreference:module:standard:logical:accessor|accessor]] declaration
+provides a mapping between a ROC address space and a Java class.
+ 
+The mapping is defined by a 
+[[doc:logicalreference:module:standard:logical:grammar|grammar]],  a declarative
+pattern language. Any resource request matching the grammar is resolved to an 
+instance of the Java class. In this case the grammar has a static path first 
+part  ''res:/tutorial/basics/part2/''  followed by a <regex type="anything"/>.
+So basically this grammar accepts all resource requests starting with 
+res:/tutorial/basics/part2/.
+
+Grammars are a powerful way to enable ROC mappings without needing to write low-level code.
+A grammar development environment is provided [http:/tools/grammar|here].
+
+{callout}
+See [[doc:tutorial:basics:part1#HTTP Connection|here]] for the full explanation.
+{/callout}
+
+
+===HTTP Connection===
+Exactly in the same way that we made the fileset visible to the HTTP web server
+we now make the accessor visible.
+
+{xml}
+<import>
+	<uri>urn:org:netkernel:tutorial:basics:dynamic-import-impl</uri>				
+</import>
+{/xml}
+
+===Java Source===
+
+The source code for the ''ServletPatternAccessor'' class is shown below. For extensive details of the physical accessor APIs see the [[doc:physicalreference:accessors|developer reference]].
+
+{java}
+package tutorial.basics.part2;
+
+import org.netkernel.layer0.nkf.INKFRequestContext;
+import org.netkernel.module.standard.endpoint.StandardAccessorImpl;
+
+public class ServletPatternAccessor extends StandardAccessorImpl
+{
+	@Override
+	public void onSource(INKFRequestContext context) throws Exception
+	{
+		String url=context.source("httpRequest:/url", String.class);
+		String method=context.source("httpRequest:/method", String.class);
+		String result="Hello Servlet World"+
+									"\nRequest Identifier = "+context.getThisRequest().getIdentifier()+
+									"\nHTTP Method = "+method+
+									"\nHTTP URL = "+url;
+		context.createResponseFrom(result);
+	}
+}
+{/java}
+
+This class extends {search}StandardAccessorImpl{/search} which is the base 
+class for creating [[doc:physicalreference:accessors|Accessors]].
+
+This class overrides the ''onSource()'' method. This means it will respond to 
+requests that match the grammar '''and''' which have the SOURCE verb. 
+
+Lets look at the example code in the onSource() method.  The first line 
+uses the context object to make a SOURCE request for '''httpRequest:/url'''
+
+{java}String url=context.source("httpRequest:/url", String.class);{/java}
+
+Unlike a regular Java servlet a NetKernel accessor is '''not''' the exit ramp 
+from the resource oriented world to the object oriented world. 
+Actually an accessor sits on the boundary between OO and ROC.  It is a Container
+and can happily make use of Object libraries and standard Java technologies, but 
+equally it can make ROC 
+[[doc:physicalreference:request:issuing|resource requests]] into the address space.
+
+
+
+{callout}
+The httpRequest: space is implemented on the underlying 
+javax.servlet.http.HttpServletRequest - if you need direct access to this object 
+then you can SOURCE it from '''httpRequest:/advanced/HttpServletRequest'''.  
+However its generally much better to use the resource oriented address space 
+since then you will be taking advantage of the ROC infrastructure's ability to 
+optimize computation with caching, dependency tracking, scaling, etc.
+{/callout}
+In this case we are SOURCEing the resource ''httpRequest:/url''.   
+The [[doc:tpt:http:httpRequest|httpRequest:]] and
+[[doc:tpt:http:httpResponse|httpResponse:]] address spaces are always 
+accessible when we receive requests from the HTTP Bridge.  The HTTP Bridge 
+models the dispersed non-normalized state of the HTTP protocol as a uniform 
+ROC resource space.  The request/response space is visible within the scope 
+of the HTTP Bridge request '''and''' any sub-requests.
+
+Finally the example code constructs a simple String result showing the NetKernel 
+resource request identifier, the HTTP method (verb) and the actual HTTP URL.  
+This string is set as the response and will be returned as the resource 
+representation to the requestor - in this case the HTTP Bridge - which takes 
+care of serializing the resource into the HTTP response stream and setting 
+response codes, etc.
+
+==HTTP Method and ROC Verb==
+
+If you're coming to ROC with a prior understanding of REST you might be wondering why does
+the accessor only implement handling for SOURCE ?
+
+Well the 
+[[doc:tpt:http:HTTPBridge|HTTP Bridge]] always issues its requests with a 
+[[doc:physicalreference:verb|SOURCE]] verb - no matter what the Method of the
+HTTP request. If you think about this, it is actually entirely consistent 
+with the abstraction. The HTTP request state resides ''outside'' of the system.  
+The HTTP Bridge must SOURCE a resource in order to determine how to write an appropriate
+external response to the pending HTTP request. Irrespective of what the HTTP method is, the bridge needs to 
+SOURCE a resource to do its job.
+
+''We will [[doc:tutorial:basics:part6|show later]] how simple it is to insert a method/verb translation overlay into any address space, if for reasons of preference you wish to differentiate the HTTP method into requests that map to ROC verbs.''
+  
+==Summary==
+
+In this section we have shown how a Java class can be bound to the address 
+space using a declarative grammar. We briefly discussed how an Accessor may use 
+both Object Oriented and ROC worlds. We discussed how the HTTP Bridge provides 
+a normalized resource space for the HTTP protocol. 
+
+''Q.E.D''  we mapped a Java class into the web address space.   
+The 1990s were thrilling weren't they ?  Lets move on...
+  
+===Exercises===
+
+#How would you combine the static fileset declaration ([[doc:tutorial:basics:part2|part1]]) and multiple accessor declarations to create a dynamic web application?
+#How would you use the httpRequest:/param/xxxx space to obtain URL query parameters? 
+#How would you use the httpResponse: space to issue a 302 redirect?
+
+[[doc:tutorial:basics:part3|Next Section ->]]

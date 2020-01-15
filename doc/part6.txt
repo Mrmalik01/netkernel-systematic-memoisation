@@ -1,0 +1,247 @@
+=Part 6 - Router Pattern =
+{callout}
+See  [[doc:tutorial:basics:title#Source Code|Source Code]] for
+how to find the module containing the source of these examples.
+{/callout}
+We have seen that the mapper overlay enables some powerful patterns.  In this
+section we'll explore how the mapper is actually just a pattern itself.  An overlay pattern.
+
+In the '''module.xml''' file we now move to the rootspace declaration for 
+'''urn:org:netkernel:tutorial:basics:part6'''.  This rootspace declaration is quite large
+so we will assume you can view the original source directly and only display the relevant
+parts in the [[#Analysis|analysis]].
+
+==Play Time ==
+
+In this demo we have applied a filter over the general web mount pattern we saw previously.
+In this case the filter only admits requests that contain "netkernel" in the identifier.
+
+Click this link to try it out: [http://localhost:8080/mnt/nk-wide-web/www.netkernel.org]
+
+Now try this: [http://localhost:8080/mnt/nk-wide-web/www.google.com]
+
+When the identifier is not valid we route the request to a resource that indicates that access has been
+blocked.
+
+In both cases we log the request to the [http:/tools/log-view|system log].
+
+==Analysis==
+
+Lets analyze the '''urn:org:netkernel:tutorial:basics:part6''' rootspace declaration.  At first this looks more complex than
+earlier examples but if you have an XML editor that lets you fold nested elements the structure should be quite simple to
+understand.
+
+First look at the  rootspace.  It contains just two tags.  The familiar import of '''urn:org:netkernel:tutorial:basics:dynamic-import-impl''' to
+expose the space to the HTTP transport.   The other tag introduces the [[doc:logicalreference:module:standard:logical:pluggable-overlay|pluggable-overlay]]
+
+{xml}
+<pluggable-overlay>
+		<preProcess>
+			<identifier>active:intercept</identifier>
+			<argument name="request">arg:request</argument>
+		</preProcess>
+		<space>
+		<!-- The space wrapped by the pluggable-overlay -->
+		</space>
+</pluggable-overlay>
+{/xml}
+
+Like all overlay's it wraps an inner space declaration - we'll explore that in detail below.
+
+It also has a <preProcess> tag.  The syntax should be familiar from the earlier mapper examples, since this is
+a [[doc:logicalreference:module:standard:logical:declarative:request:syntax|declarative request]].  '''preProcess'''' is
+telling the pluggable-overlay that for every request that is received, first the preProcess request must be made.
+
+In this case we are saying there is an endpoint called active:intercept  (our choice of name - nothing to do with the overlay).  Notice
+that we are also specifying a single argument called "request" and we are referencing "arg:request".   This says, send the request that has been received
+at the pluggable-overlay as an argument to the specified endpoint.  We are routing the request to a preProcess handler of our choosing.
+
+===Wrapped Space===
+
+Lets look at the space that pluggable overlay wraps...
+
+{xml}
+<space>
+		<mapper>
+			<config>
+				<endpoint>
+					<grammar>
+						<simple>res:/mnt/nk-wide-web/{path}</simple>
+					</grammar>
+					<request>
+						<identifier>http://[[arg:path]]</identifier>
+					</request>
+				</endpoint>
+				<!--two endpoints hidden for clarity-->
+			</config>
+			<space>
+				<import>
+					<uri>urn:org:netkernel:client:http</uri>
+				</import>
+				<!--	fileset and groovy import hidden for clarity -->
+			</space>
+		</mapper>
+	</space>
+{/xml}
+
+It contains a mapper overlay and another wrapped space.  If you ignore the last two endpoint declarations
+in the mapper (fold them away in your XML editor) then
+you see that this is identical in form to the earlier examples of mapping requests to the mounted web.  Requests
+to res:/mnt/nk-wide-web/... will be mapped to http:
+
+===Router Handler===
+
+Now lets take a look at the second endpoint declaration...
+
+{xml}
+<endpoint>
+	<grammar>
+		<active>
+			<identifier>active:intercept</identifier>
+			<argument name="request"/>
+		</active>
+	</grammar>
+	<request>
+		<identifier>active:groovy</identifier>
+		<argument name="operator">res:/tutorial/basics/part6/intercept.gy</argument>
+		<argument name="request">arg:request</argument>
+	</request>
+</endpoint>
+{/xml}
+
+This is the declaration of an endpoint with the [[doc:physicalreference:accessor:service|service accessor pattern]].
+ We see that the grammar
+matches the request syntax we constructed in the preProcess step.   Therefore this endpoint is the handler for the request routed from
+the pluggable-overlay.
+
+===intercept.gy===
+
+We see that the handler endpoint is implemented using the groovy runtime to execute the res:/tutorial/basics/part6/intercept.gy.
+Lets look at the intercept.gy code...
+
+{java}
+import org.netkernel.layer0.nkf.*;
+
+requestOuter=context.source("arg:request", INKFRequestReadOnly.class);
+
+requestInner=null;
+
+identifier=requestOuter.getIdentifier();
+if(identifier.indexOf("netkernel")>=0)
+{	requestInner=requestOuter.getIssuableClone();
+	context.logRaw(INKFRequestContext.LEVEL_INFO, "nk-wide-web mapped request: "+identifier);		
+}
+else
+{	requestInner=context.createRequest("access-blocked");
+	context.logRaw(INKFRequestContext.LEVEL_WARNING, "nk-wide-web request blocked: "+identifier);
+}
+
+context.createResponseFrom(requestInner);
+{/java}
+
+So that the details make sense, we should explain the contractual relationship between the pluggable-overlay and the preProcess handler.
+
+For every outer request it receives, the pluggable-overlay requests the preProcess handler and relays the
+outer received request to it.  The handler does its thing, such as logging, audit, or routing but ultimately it '''must''' return a ''new'' request to the pluggable-overlay. 
+The pluggable-overlay then issues the new request into the wrapped space.  Finally the response for the new request is relayed as the response
+to the initial outer request.
+  
+So looking at the intercept.gy code in detail, firstly we see that the "request" argument is sourced.  It is an {search}INKFRequestReadOnly{/search} since you'll recall that the preProcess request
+declaration indicated that the pluggable-overlay should pass the request with that argument name.
+
+So now the variable '''requestOuter''' holds a reference to the request that is being routed by the pluggable-overlay.  Having received the request
+we are now able to decide how we wish to route it.
+
+As we saw in the demo, this code simply provides an admittance filter for any request with an identifier matching "netkernel", otherwise it routes all
+requests to an resource showing that access has been blocked.  The logic of the implementing code is quite clear, so lets just
+highlight some of the key details.
+
+Notice that when the request is admissible (contains netkernel in its request identifier) we construct requestInner by calling the getIssuableClone().  So we
+have a clone of the outer request.   We must do this since the pluggable-overlay requires a new request - but we want the same thing as the original
+request so we just clone it.
+
+When the access is denied we use the context object to construct a new request for the resource "access-blocked".
+
+In both logical branches we use the context to log the request to the system log.
+
+Finally the new request is issued as the response to be received by the pluggable-overlay and issued into its space wrapped.
+ 
+To complete the picture, notice that the mapper provides a mapping from "access-blocked" to a static resource (in the fileset) - here we are using
+the alias pattern.  By requesting this generic name we have reserved the future option to change the mapping to a dynamic service. 
+The implementation of the handler code doesn't need to be worried about the details of how we may choose to deal with the access denial.
+
+==Summary==
+
+In this section we have introduced the pluggable-overlay.   We showed that in fact the [[doc:logicalreference:module:standard:logical:mapper|mapper]]
+is provided as a convenient built-in technical implementation but is in fact an instance of the routing overlay pattern.
+
+We saw that the pluggable-overlay enables us to have programmatic control over requests and, as with all other patterns we have shown,
+the preProcess is fully at liberty to use the ROC world.
+
+===Exercises===
+
+#How might you implement an HTTP Method to ROC verb adaption overlay?
+#How might you implement a transparent non-repudiable audit overlay using the pluggable-overlay?
+#How might you implement a time controlled lock?
+#How might you implement the mapper overlay?
+#How might you rewrite the URLs in the mapped web pages so that images and styling do not get displaced?  Hint look at the pluggable-overlay's ability to provide a postProcess handler.
+#The ROC world really is your oyster. No excuses now!  Go for it....  
+  
+
+===Big Picture Thoughts===
+
+The general picture here is that ROC is self-consistent.  Even resource requests are themselves ROC resources and are
+treated uniformly in the abstraction!   Hence the reason that the outer request is immutable and the handler must construct a new
+request as its response.
+
+==Exercises Answers==
+
+===1.  REST to ROC Translator===
+
+Here's a groovy script that can be used with the pluggable overlay to translate HTTP method to ROC verbs.
+
+{java}
+import org.netkernel.layer0.nkf.*;
+
+overlayRequest=context.source("arg:operand",INKFRequestReadOnly.class);
+
+//Source the HTTP verb from the http request.
+httpVerb=context.source("httpRequest:/method");
+
+context.logRaw(
+	INKFRequestContext.LEVEL_INFO,
+	"HTTP-REST-Bridge - "+httpVerb + " "+ overlayRequest.getIdentifier()
+	);
+
+verb=null;
+body=null;
+//Translate verb
+switch(httpVerb)
+{
+	case "GET":
+	case "POST":
+	case "HEAD":
+		verb=INKFRequestReadOnly.VERB_SOURCE;
+	break;
+	case "PUT":
+		verb=INKFRequestReadOnly.VERB_SINK;
+		//Source http request body and set as the primary argument.
+		body=context.source("httpRequest:/body");		
+	break;
+	case "DELETE":
+		verb=INKFRequestReadOnly.VERB_DELETE;
+	break;
+}
+
+//Create a new request and surface the HTTP verb into the ROC domain by making an explicit argument
+innerReq=context.createRequest(overlayRequest.getIdentifier());
+innerReq.addArgument("httpVerb", httpVerb);
+innerReq.setVerb(verb);
+if(body!=null)
+{	innerReq.addPrimaryArgument(body);
+}
+
+//Return the new request to the pluggable overlay to be issued into the wrapped space.
+response=context.createResponseFrom(innerReq);
+
+{/java} 

@@ -1,0 +1,125 @@
+=Part 4 - Alias Pattern =
+{callout}
+See  [[doc:tutorial:basics:title#Source Code|Source Code]] for
+how to find the module containing the source of these examples.
+{/callout}
+The names that you use to identify things vary with context.  In the real world 
+this is almost so common we don't even think about - think of your full name,  
+your first name, your nicknames, your partner's pet names, your initials, your 
+social security number, your passport number.
+
+We can look at operating systems and think about the power that aliases 
+provide - on an FTP download site you often see a link between a specific directory
+and the alias "latest".  Unix shells let us alias a complex command line with 
+many switches to a simple short name.
+
+But in traditional software, names (variables, classes etc) tend to be quite 
+limited and brittle - refactoring leads to a cascade of changes.
+
+In ROC it is a fundamental tenet that a given resource may have any number of 
+identifiers.  Lets show how the mapper provides us with a powerful way to 
+introduce multivalent (more than one) naming in order to decouple 
+systems and to provide long-term stability to our software.     
+
+In the '''module.xml''' file we now move to the rootspace declaration for 
+'''urn:org:netkernel:tutorial:basics:part4'''. It looks like this :
+
+{xml}
+<rootspace uri="urn:org:netkernel:tutorial:basics:part4" public="true">
+		<mapper>
+			<config>
+				<endpoint>
+					<grammar>
+						<simple>res:/mnt/earth-wide-web/{path}</simple>
+					</grammar>
+					<request>
+						<identifier>res:/tutorial/basics/part3b/[[arg:path]]</identifier>
+					</request>
+				</endpoint>
+			</config>
+			<space>
+				<import>
+					<uri>urn:org:netkernel:tutorial:basics:part3b</uri>
+				</import>
+			</space>
+		</mapper>
+		<import>
+			<uri>urn:org:netkernel:tutorial:basics:dynamic-import-impl</uri>		
+		</import>
+	</rootspace>
+{/xml}
+
+==Play Time ==
+
+If you're starting to see the picture, you might, just by inspecting the part4 
+space, already see what is going to happen when you click the following link...
+
+Click this link [http://localhost:8080/mnt/earth-wide-web/www.google.com|http://localhost:8080/mnt/earth-wide-web/www.google.com]
+
+You got it, we have mapped the terrible name '''res:/tutorial/basics/part3b/''' 
+to the more memorable '''res:/mnt/earth-wide-web/'''  In the process we've 
+future-proofed the web - we can now safely colonize the moon and the solar 
+system and have a uniform addressing of their webs too ! 
+
+==Analysis==
+
+There's little need to reiterate the details of how the mapper is performing 
+its operation.  Instead we should just point out a few interesting observations.  
+Firstly notice that the mapped space imports
+
+{xml}
+<import>
+	<uri>urn:org:netkernel:tutorial:basics:part3b</uri>
+</import>
+{/xml}
+
+That is the mapper in part4 is wrapping the space we discussed in part 3b - 
+which, you'll recall is implemented using another mapper.  So the first thing to
+see here is that mappers can be nested.  To any depth.
+
+The second thing to note is that it doesn't matter where or how many times a 
+space is imported.  In this case the part 3b space is imported into the 
+FrontEnd HTTP fulcrum and also into the part4 space. The only limitation is 
+that a space cannot import itself !  But you'll be warned if you try to do this. 
+
+Now this example was a little frivolous but in practice using aliasing is a 
+very important technique for stable software.  In essence what we did here 
+is map a particular implementation address to a uniform long-term location.  
+We are now free to implement a complete re-implementation of the HTTP mapping
+in another space in the future.  All applications that work against the uniform 
+alias will never need to know or care about future changes.
+
+Mapping provides many powerful architectural benefits.  It permits human 
+readable "sensible" names for implementations that necessarily have
+version specific details.  It provides the ability to introduce scaffolding in 
+a system that is being developed - we can map a service name to a static
+resource and build our high level system to request that "scaffolding" 
+interface.  When the real live service is built and tested we can simply change 
+the mapping from the static resource to the live resource - the high level code 
+just works.
+
+Finally just as with Unix shell aliases we can hide unwanted complexity to 
+those that it does not matter to.  A good example of this is 
+the '''toolbox pattern'''. In this pattern a system architect decides to pick 
+a set of standard services that he wishes to standardize on for his system.  
+Generally these will come from a number of libraries.  By importing the 
+libraries into a single space and wrapping it with a mapper he is able to 
+selectively expose only the subset of tools that he has chosen.  All the 
+developers in the team can import the "toolbox" and don't need to know anything 
+of the unnecessary details.    
+
+==Summary==
+
+Aliases are natural and powerful ways for people to deal with complexity and 
+shortcut context.  The mapper and ROC allow any software system to harness this
+power and as a consequence be less brittle and more stable.
+
+''Q.E.D''  we showed how ROC permits the alias pattern.  We also made the 
+World Wide Web a less ambiguous concept and paved the way for intergalactic 
+colonization.  Not bad for no lines of code !
+  
+===Exercises===
+
+#How would you alias an [[doc:mod:xml:core:xslt|XSLT]] transform that creates HTML pages from RSS feeds and call it active:HTMLFeed+feed@[ ... ] ? Hint, look at [[doc:logicalreference:module:standard:logical:grammar|active grammars]] and map to a request to the active:xslt tool with an operator argument preset to the stylesheet resource.
+
+[[doc:tutorial:basics:part5|Next Section ->]]

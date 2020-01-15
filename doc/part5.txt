@@ -1,0 +1,217 @@
+=Part 5 - Script Pattern =
+{callout}
+See  [[doc:tutorial:basics:title#Source Code|Source Code]] for
+how to find the module containing the source of these examples.
+{/callout}
+We have seen how mapping provides a number of powerful patterns to be brought 
+to bear on software architecture. In this part we explore what happens to 
+programming languages when we place them in the ROC domain. We'll use the
+mapper to invoke scripts.
+
+In the '''module.xml''' file we now move to the rootspace declaration for 
+'''urn:org:netkernel:tutorial:basics:part5a'''. It looks like this :
+
+{xml}
+<rootspace uri="urn:org:netkernel:tutorial:basics:part5a" public="true">
+		<mapper>
+			<config>
+				<endpoint>
+					<grammar>
+						<simple>res:/tutorial/basics/part5a/{path}</simple>
+					</grammar>
+					<request>
+						<identifier>active:groovy</identifier>
+						<argument name="operator">res:/tutorial/basics/part5/script.gy</argument>
+						<argument name="path">arg:path</argument>
+					</request>
+				</endpoint>
+			</config>
+			<space>
+				<fileset>
+					<glob>tutorial/basics/part5/*</glob>
+				</fileset>
+				<import>
+					<uri>urn:org:netkernel:lang:groovy</uri>
+				</import>
+			</space>
+		</mapper>
+		<import>
+			<uri>urn:org:netkernel:tutorial:basics:dynamic-import-impl</uri>		
+		</import>
+	</rootspace>
+{/xml}
+
+==Play Time ==
+
+The mapper in space 5a is configured to map requests in the path 
+'''res:/tutorial/basics/part5a/''' to a groovy script that replicates the 
+simple Java accessor code we saw earlier...
+
+Click this link to try it out: [http://localhost:8080/tutorial/basics/part5a/hello.txt|http://localhost:8080/tutorial/basics/part5a/hello.txt]
+
+*To show this is calling live code, try changing final path.  For example try: [http://localhost:8080/tutorial/basics/part5a/really-live|http://localhost:8080/tutorial/basics/part5a/really-live]
+*That did not prove anything of course, so now try it with a final path all of your own :-)
+
+
+==Analysis==
+
+The mapper and its grammar are as we have seen before.  However, the declarative 
+request that is constructed is a little richer...
+
+{xml}
+<request>
+	<identifier>active:groovy</identifier>
+	<argument name="operator">res:/tutorial/basics/part5/script.gy</argument>
+	<argument name="path">arg:path</argument>
+</request>
+{/xml}
+
+We see that it is constructing a request that matches the syntax for the 
+[[doc:lang:groovy:groovy:runtime|active:groovy]] - so this mapping results in a 
+request to the active:groovy language runtime.   The statically defined operator 
+argument is '''res:/tutorial/basics/part5/script.gy''' - this is the script we 
+wish the groovy runtime to execute when requested.  Looking at the mapper 
+overlay space we see that it has a static fileset declaration for files in the 
+directory /tutorial/basics/part5/ (it also imports ''urn:org:netkernel:lang:groovy'' 
+which is the space that provides the groovy runtime service).
+
+If you examine the file ''script.gy'' in the part5/ directory you will see...   
+
+{java}
+url=context.source("httpRequest:/url", String.class);
+method=context.source("httpRequest:/method", String.class);
+result="Hello Script World"+
+							"\nRequest Identifier = "+context.getThisRequest().getIdentifier()+
+							"\npath argument = "+context.getThisRequest().getArgumentValue("path")+
+							"\nHTTP Method = "+method+
+							"\nHTTP URL = "+url;
+context.createResponseFrom(result);
+{/java}
+
+This code is very similar to the code we used in the Java accessor discussed 
+earlier.  However in this case there is no need to override any base class 
+methods to receive the request.  The groovy script starts executing immediately.   
+Notice that the groovy runtime provides each script with a global '''context''' 
+object - this is an instance of {search}INKFRequestContext{/search} - therefore 
+a script has exactly the same ability to interact with the ROC world as an Accessor.
+
+Notice that it receives an argument "path" - this was conveyed by the mapper 
+with reference to the grammar part "path" using "arg:path" statement in the
+declarative request.
+
+Try editing the script and see how it is live dynamic code.
+
+This example shows that language runtimes are uniformly treated in the ROC model.  
+The mapper can map to a program as easily as to the filesystem or any other 
+resource.
+
+==Code State Transfer==
+
+Hopefully you are beginning to see the big picture that the ROC abstraction 
+provides a normalized world in which everything (files, the web, protocols, 
+even code, ...) is a resource.   Lets explore the idea that code is a resource 
+just like any other.
+
+Take a look at the alternative implementation of the demo provided in 
+'''urn:org:netkernel:tutorial:basics:part5b'''. Notice that the operator 
+argument declaration is now an inline fragment of XML...
+
+{literal}
+<script>
+<![CDATA[
+url=context.source("httpRequest:/url", String.class);
+method=context.source("httpRequest:/method", String.class);
+result="Hello Code State Transfer World"+
+		"\nRequest Identifier = "+context.getThisRequest().getIdentifier()+
+		"\npath argument = "+context.getThisRequest().getArgumentValue("path")+
+		"\nHTTP Method = "+method+
+		"\nHTTP URL = "+url;
+context.createResponseFrom(result);
+]]>
+</script>
+{/literal}
+
+Apart from a different response string it is the same script.  Try it out...
+
+Click this link to try it out: [http://localhost:8080/tutorial/basics/part5b/hello.txt|http://localhost:8080/tutorial/basics/part5b/hello.txt]
+
+So the first new thing to understand is that the mapper supports literal XML 
+fragments as inline argument declarations - this can be very convenient.
+
+But the bigger picture is that the groovy runtime doesn't know or care that its 
+operator argument is inlined XML - it is invoked with an operator reference
+that points to the XML just as previously it received a referenced to the script 
+file.   The code is a resource in the address space - if you wished the code 
+could itself be dynamically generated by another dynamic service !
+
+One thing you may be wondering is how come the first example was a file and the 
+second is an XML fragment - how do I know what type to pass to the groovy 
+runtime ? Well this is where the power of [[doc:physicalreference:transreptors|transreptors]]
+come in to play.  The  groovy runtime actually doesn't care about what you think 
+the form of the script resource is - internally it always wants to have the 
+operator as compiled Java byte-code.  Therefore it SOURCEs the operator as 
+a {search}CompiledGroovyRep{/search} - the groovy compiler transreptor located 
+in the lang:groovy space responds to this request.
+
+The compiler SOURCEs the script as a 
+{search}IDeterminateStringRepresentation{/search} - you should think of this as 
+like a generic String (unfortunately String is final in Java so we cannot 
+subclass it!).  In the layer1 space we provide several transreptors that take 
+primitive types and transrept them to DeterminateStrings. Therefore, even though 
+the Groovy runtime knows only about its internal type, ''transreptor pipeline discovery'' allows it to receive script resources in practically any form.
+
+This section has talked about Groovy as the language runtime.  NetKernel supports 
+many languages. It even provides [[doc:layer1:accessors:java-runtime|active:java]] 
+which is a language runtime that dynamically invokes Java!
+
+Look at '''urn:org:netkernel:tutorial:basics:part5c''' and notice that it uses 
+the active:java language runtime to dynamically execute the Accessor we statically 
+defined in the earlier example.
+
+{xml}
+<request>
+	<identifier>active:java</identifier>
+	<argument name="class">tutorial.basics.part2.ServletPatternAccessor</argument>
+</request>
+{/xml}
+
+Click this link to try it out: [http://localhost:8080/tutorial/basics/part5c/hello.txt|http://localhost:8080/tutorial/basics/part5c/hello.txt]
+
+Finally, and to give you food for thought, there's yet another example in 
+'''urn:org:netkernel:tutorial:basics:part5d'''. Notice that this time the 
+operator script is an inline [[doc:layer1:schemes:data|data:]] URI.  i.e. the 
+code is the identifier!
+
+{xml}
+<argument name="operator">data:text/plain,context.createResponseFrom("Turing%20Machine")</argument>
+{/xml}
+ 
+Click this link [http://localhost:8080/tutorial/basics/part5d/hello.txt|http://localhost:8080/tutorial/basics/part5d/hello.txt]
+
+==Summary==
+
+In this section we showed how the mapper and language runtimes combine to 
+create a rich dynamic system. We saw that code is a resource just like any other.   
+We discovered that we are liberated from the constraint of any one language 
+since ROC exists outside of programming language - we can choose our 
+implementation languages like tools, based upon features or economic 
+considerations such as the existing skill set of the development team.
+
+Most significantly we demonstrated that code is a resource like any other.
+
+''Q.E.D''  we showed how ROC implements the scripting pattern.
+  
+===Exercises===
+
+#The ROC world's your oyster  - go for it... 
+
+===Big Picture Thoughts===
+
+The last example actually gives the true Computer Science story of what is 
+happening with languages in ROC.  It is possible to show that all of these 
+examples are ROC equivalent - ROC raises all code up to a resource identifier 
+expression (actually the general contextual identifier of space(s) + identifier).
+The evaluation of the identifier (Turing tape) leads to the reification of the 
+resource representation !
+
+[[doc:tutorial:basics:part6|Next Section ->]] 

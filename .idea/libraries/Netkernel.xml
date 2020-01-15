@@ -1,0 +1,23 @@
+<component name="libraryTable">
+  <library name="Netkernel">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../../lib/urn.com.ten60.core.layer0-1.128.57.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../lib/urn.com.ten60.core.module.standard-1.82.29.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../lib/urn.com.ten60.core.netkernel.api-4.2.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../lib/urn.com.ten60.core.netkernel.impl-4.40.24.jar!/" />
+      <root url="file://$PROJECT_DIR$/../../modules/urn.org.netkernel.ext.layer1-1.60.26" />
+      <root url="file://$PROJECT_DIR$/../../modules/urn.org.netkernel.ext.system-1.48.29" />
+      <root url="file://$PROJECT_DIR$/../../modules/urn.org.netkernel.xml.core-2.9.1" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../../lib/urn.com.ten60.core.layer0-1.128.57.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../lib/urn.com.ten60.core.module.standard-1.82.29.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../lib/urn.com.ten60.core.netkernel.api-4.2.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../lib/urn.com.ten60.core.netkernel.impl-4.40.24.jar!/" />
+      <root url="file://$PROJECT_DIR$/../../modules/urn.org.netkernel.ext.layer1-1.60.26" />
+      <root url="file://$PROJECT_DIR$/../../modules/urn.org.netkernel.ext.system-1.48.29" />
+      <root url="file://$PROJECT_DIR$/../../modules/urn.org.netkernel.xml.core-2.9.1" />
+    </SOURCES>
+  </library>
+</component>

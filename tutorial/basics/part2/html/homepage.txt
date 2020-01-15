@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Resource-oriented computing test</title>
+</head>
+<body>
+    <h3>Resource-oriented computing demo</h3>
+    <h4>Fibonacci algorithm test - </h4>
+    <p>Algorithm type - <input type="radio" name="radio1" id="radio1" value="Naive Fibonacci" checked/> Naive Fibonacci <input type="radio" name="radio1" id="radio2" value="Extrinsic Fibonacci"/>Extrinsic Fibonacci</p>
+    <select name="dataset" size="3">
+        <option value="15">15</option>
+        <option value="25">25</option>
+        <option value="35">35</option>
+    </select>
+</body>
+</html>

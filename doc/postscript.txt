@@ -1,0 +1,33 @@
+=ROC Basics Postscript=
+
+Well that's the end of the tour.  By now you probably think we should have called the book '''Doing Cheap Tricks with ROC'''.
+
+I thought I'd just add a few general thoughts about where to go from here.  Hopefully you've seen that ROC
+is pretty cool, pretty powerful and very uniform - anything that seems to be a specific technology
+is really an implementation of a general pattern on the ROC primitives.
+
+Learning ROC is as much about unlearning, keeping in check your default assumptions, learning to relax and let the infrastructure catch you.  Here's a few
+good principles I keep in mind when developing:
+
+Think local. Don't try to think across layers - what I mean is if you concentrate on each space
+on its own, the relations between spaces take care of themselves.  Take the last example - its actually very simple in its parts
+but trying to imagine it as a whole gets complicated.  I didn't write it that way.  I thought about the regular mapped web space first and then just wrapped it.
+ROC allows you to create very powerful engineered systems.  Like any good engineering you get there by composition of
+simple cleanly designed units.  Think local and allow the scale invariance of ROC to work for you.
+
+The other piece of advice is: it pays to work from the edges to the middle. More often than not, you find that there is no middle!
+
+Final word.  ROC is simple.  It only gets complicated when you lose context.  So keep it simple. Test the 1-1 relationship between requestor and endpoint.
+''Remember'' to use the [http:/tools/visualizer/|visualizer] - it doesn't lie, it captures and shows absolutely every piece of state and allows you to
+track through and keep tight hold on the context. 
+
+==Exercises==
+
+#Go back through the whole book with the [http:/tools/visualizer/|visualizer] enabled and use it to see how it provides a more complete explanation of the demos than any amount of documentation ever could!
+
+Have fun.
+
+PJR
+
+11/6/2009
+

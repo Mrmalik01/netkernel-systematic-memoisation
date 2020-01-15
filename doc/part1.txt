@@ -1,0 +1,214 @@
+=Part 1 - Basic Web Server=
+{callout}
+See  [[doc:tutorial:basics:title#Source Code|Source Code]] for
+how to find the module containing the source of these examples.
+{/callout}
+The most basic web server simply maps a directory of files onto a URL path on 
+the web server. We will show how this pattern can be implemented in 
+the NetKernel [[doc:logicalreference:module:title|Standard Module]].
+
+Examine the '''module.xml''' file that you can find in the directory where 
+the tutorial module resides. Search for the first '''rootspace''' (the 
+explanation is coming soon now). It looks like this :
+
+{xml}
+	<rootspace uri="urn:org:netkernel:tutorial:basics:part1" public="true">
+		<fileset>
+			<glob>tutorial/basics/part1/*</glob>
+		</fileset>
+		<import>
+			<uri>urn:org:netkernel:tutorial:basics:dynamic-import-impl</uri>
+		</import>
+	</rootspace>
+{/xml}
+
+Does not make a lot of sense yet ? It will, but first lets see what this is doing...
+
+==Play Time==
+
+Look at the tutorial module directory.  You will see it  contains a 
+directory path '''/tutorial/basics/part1/'''.  In the deepest directory 
+there is a single file '''hello.txt'''. 
+
+Click this link [http://localhost:8080/tutorial/basics/part1/hello.txt|http://localhost:8080/tutorial/basics/part1/hello.txt] 
+to view that file in your web browser.
+
+*To show this is a real live directory mapped as a basic web server try adding another file to the directory and change the last part of the URL to request it. For example, if you add a file '''photo.jpg''' - you could view the picture with [http://localhost:8080/tutorial/basics/part1/photo.jpg|http://localhost:8080/tutorial/basics/part1/photo.jpg]
+
+
+==Analysis==
+
+Having convinced yourself that we have indeed created is a basic live web 
+server lets explain what is happening.  Lets step through each part of 
+the declaration in turn.
+
+===rootspace===
+
+{xml}
+<rootspace uri="urn:org:netkernel:tutorial:basics:part1" public="true"/>
+{/xml}
+
+A [[doc:logicalreference:module:standard:logical|rootspace]] is a resource
+[[doc:quickstart:space|space]] that can be imported into another ''space''.  Here we can see we 
+are declaring its '''uri''' and also indicating that it is '''public''', meaning 
+there are no restrictions on other modules importing this.
+
+===fileset===
+{xml}
+<fileset>
+	<glob>tutorial/basics/part1/*</glob>
+</fileset>
+{/xml}
+
+The [[doc:logicalreference:module:standard:logical:fileset|fileset]] declaration
+maps the contents of the directory '''/tutorial/basics/part1/''' into our
+rootspace. Therefore any request that reaches this space for a resource whose 
+identifier starts with 
+
+'''res:/tutorial/basics/part1/'''
+
+will be received by the fileset and the corresponding file from the directory 
+will be returned as the response.
+
+So, a '''fileset''' is (and does) exactly what it says ... it 
+''makes a set of files available''.
+
+
+===HTTP Connection - In Brief===
+
+The fileset  declaration shows how the directory is mapped into the
+rootspace.  But how does it end up being visible to the HTTP web server ?
+Well this all happens because of the following import...
+
+{xml}
+<import>
+	<uri>urn:org:netkernel:tutorial:basics:dynamic-import-impl</uri>				
+</import>
+{/xml}
+
+This [[doc:logicalreference:module:standard:logical:import|import]] pulls into
+'''our''' space the resources defined by '''another''' space, in this case 
+'''urn:org:netkernel:tutorial:basics:dynamic-import-impl'''.
+
+If you look at the bottom of ''module.xml'' you will see there are some 
+common ''library'' spaces.  The last space declared is...
+
+{xml}
+<rootspace uri="urn:org:netkernel:tutorial:basics:dynamic-import-impl">
+	<fileset>
+		<glob>etc/system/SimpleDynamicImportHook.xml</glob>
+	</fileset>
+</rootspace>
+{/xml} 
+
+This is the space that is being imported. You can see its another very 
+simple space. It declares a fileset which maps the file '''SimpleDynamicImportHook.xml''' 
+located in the directory '''etc/system/''' into the address space. So a request 
+for ''res:/etc/system/SimpleDynamicImportHook.xml'' will be served that file.
+
+So the upshot of the import in our main space is that it is able to access the resource 
+resource '''res:/etc/system/SimpleDynamicImportHook.xml'''.
+
+Looking in SimpleDynamicImportHook.xml you'll find it contains the following 
+XML fragment...
+
+{xml}
+<connection>
+	<type>HTTPFulcrum</type>
+</connection>
+{/xml}
+
+The value of <type> indicates where we want this space to be imported.   Here it is the HTTPFulcrum - which is
+the space that hosts the public HTTP Transport running on port 8080.
+
+Below you will find a [[#HTTP - In Detail|section]] that describes the full details of how the HTTP requests are routed to and received by our space. 
+In practice you just don't need think about it. Just declare ''res:/etc/system/SimpleDynamicImportHook.xml''
+and you're plugged into the HTTP server space.  That's it. 
+
+==Summary==
+
+This section has shown how we can map a fileset into a space.  
+By adding a dynamic import declaration our space is exposed to the HTTP transport.
+We have also shown that our space can be instantaneously dynamically relocated to another transport.
+
+''Q.E.D''  we mapped a directory into the web address space. It gets more interesting I promise...
+  
+===Exercises===
+
+#Try adding another directory to the module and map it into the web.
+
+==Big Picture Thoughts==
+
+Our space is a normalized transport neutral resource space - only 
+the dynamic import indicates that we want to expose these file resources on HTTP.
+What if we had fulcrums with ssh: and ftp: transports?  
+Is anything stopping us having this one space's fileset declaration simultaneously exposed to
+HTTP, SSH and FTP?
+
+[[doc:tutorial:basics:part2|Next Section ->]]
+
+==HTTP - In Detail==
+
+''Take a deep breath now ...''  
+
+The '''res:/etc/system/SimpleDynamicImportHook.xml''' resource is a hook.  It's saying: "Please import this address 
+space anywhere that has a dynamic import called '''HTTPFulcrum'''".
+
+A [[doc:logicalreference:module:standard:logical:import:dynamic|dynamic import]]
+is a powerful capability of general ROC - the details are documented elsewhere,  
+but briefly what is happening is that our space is inserting itself into one 
+(or more) other spaces based upon the local state of 
+'''res:/etc/system/SimpleDynamicImportHook.xml'''.
+
+This is a ''reverse import'' in which the state of the importee determines the import. 
+The importer (here the HTTP Fulcrum space) has no prior knowledge of the existence of this space !
+
+''Yes, you can exhale ...''   
+
+To illustrate, try this little experiment:  edit the SimpleDynamicImportHook.xml file and 
+change '''type''' to be '''HTTPAdminFulcrum'''.  Now try requesting
+this link [http://localhost:1060/tutorial/basics/part1/hello.txt|http://localhost:1060/tutorial/basics/part1/hello.txt].
+
+Retry the original link:  [http://localhost:8080/tutorial/basics/part1/hello.txt|http://localhost:8080/tutorial/basics/part1/hello.txt].  
+Nothing there?
+
+You just dynamically moved our resource space from the FrontEnd HTTP server 
+running on port 8080 to the Admin HTTP server running on port 1060.
+
+''So that the links in the docs don't get broken make sure to edit the <type> in SimpleDynamicImportHook.xml back to'' 
+'''HTTPFulcrum'''
+
+===HTTP Fulcrum===
+
+So what the heck is the HTTP Fulcrum?  Well as you might have guessed its another address space.  
+A space that is set up to contain
+an [[doc:tpt:http:overview|HTTP transport]].  
+When the URL http://localhost:8080/tutorial/basics/part1/hello.txt is requested
+the HTTP transport receives this request.  
+It issues a NetKernel root request into its host address space.
+
+''Fulcrum is not a technical term - its just helpful to use Fulcrum 
+as the name for "a space that hosts a transport".  
+Since these spaces are invariably the pivot points of an application architecture'' 
+
+The details of this are described elsewhere, but briefly the [[doc:tpt:http:HTTPBridge|HTTP Bridge]] in the front-end fulcrum, is by default set up
+to change the external ''http://'' protocol scheme to the normalized general ROC scheme of ''res:/'' 
+
+Therefore all we need to think about is that a web request on the front-end fulcrum becomes a normalized resource request 
+in the front-end fulcrum space.   Now wouldn't it be great if our space could see those requests.  You got it.  The fulcrum module 
+has the [[doc:logicalreference:module:standard:logical:import:dynamic|dynamic import]] endpoint declared in it.
+So when we declare the SimpleDynamicImportHook.xml in our space we automagically get sucked into the HTTP fulcrum
+space and get exposed to these potential HTTP requests !
+
+''Going blue ? Hold on, we are almost there ...''
+
+The upshot then is that when we request [http://localhost:8080/tutorial/basics/part1/hello.txt|http://localhost:1060/tutorial/basics/part1/hello.txt] it becomes
+res:/tutorial/basics/part1/hello.txt, which our space contains as a fileset declaration.
+
+''And exhale ..''
+
+==Exercises 2==
+
+#How might you modify our space so that it appears simultaneously on the Front-end HTTP server and the Back-end HTTP Admin server?  Hint give it both <type> declarations.
+
+[[doc:tutorial:basics:part2|Next Section ->]]

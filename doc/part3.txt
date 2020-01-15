@@ -1,0 +1,232 @@
+=Part 3 - Mount Pattern =
+{callout}
+See  [[doc:tutorial:basics:title#Source Code|Source Code]] for
+how to find the module containing the source of these examples.
+{/callout}
+Unix is halfway to a Resource Oriented abstraction.  It abstracts the filesystem 
+into a uniformly addressed tree.  It is able to abstract away the physical disk 
+storage medium by supporting mounting of filesystems. We will show how this 
+pattern can be implemented in the NetKernel 
+[[doc:logicalreference:module:title|Standard Module]] and indeed will show it can
+be generalized from files to arbitrary resource spaces.
+
+In the '''module.xml''' file we now move to the rootspace declaration for 
+'''urn:org:netkernel:tutorial:basics:part3'''. It looks like this :
+
+{xml}
+	<rootspace uri="urn:org:netkernel:tutorial:basics:part3" public="true">
+		<mapper>
+			<config>
+				<endpoint>
+					<grammar>
+						<simple>res:/tutorial/basics/part3b/{path}</simple>
+					</grammar>
+					<request>
+						<identifier>file:///[[arg:path]]</identifier>
+					</request>
+				</endpoint>
+			</config>
+			<space>
+				<import>
+					<uri>urn:org:netkernel:ext:layer1</uri>
+				</import>
+			</space>
+		</mapper>
+		<import>
+			<uri>urn:org:netkernel:tutorial:basics:dynamic-import-impl</uri>		
+		</import>
+	</rootspace>
+{/xml}
+
+===Security Notice===
+
+This rootspace declaration is commented out in the '''module.xml''' file. That 
+is because for the purposes of this demonstration this space maps your entire 
+filesystem into the ROC domain and exposes it to the HTTP server.  
+You must be aware that this is a security risk and thus we can not ship this 
+space to you pre-configured.  If you wish to try this demo remove the XML 
+comment around the space - 
+'''but be aware that you must reset your changes  once you've tried this otherwise your system could be at risk'''.
+
+If you prefer to not try this demo then just take it as read that this space 
+mounts your filesystem into the ROC space and makes it accessible on the Web 
+server.  Move on to [[#Play Time 2|Play Time 2]] to see a safe generalized 
+mount example ... 
+
+==Play Time 1==
+
+{callout}'''There are security implications with trying this demo''' - see [[#Security Notice|above]]{/callout}
+
+If you're on a Unix-based system then lets assume you have a file located in  
+'''/home/user/hello.txt'''
+
+Click this link to see that is is mounted in the ROC 
+domain [http://localhost:8080/tutorial/basics/part3/home/user/hello.txt|http://localhost:8080/tutorial/basics/part3/home/user/hello.txt].
+
+[ Unless your login name is 'user' (unlikely) you'll have to change the path 
+to a file on your system. ]
+
+If you're on a Windows system lets assume you have a file located 
+in '''C:\hello.txt'''
+
+Click this link [http://localhost:8080/tutorial/basics/part3/C:/hello.txt|http://localhost:8080/tutorial/basics/part3/C:\hello.txt]
+
+
+==Play Time 2==
+
+{callout}This demo is '''safe''' and there are no security issues with playing with this demo{/callout} 
+Mounting a filesystem is so 1970's.  Let's mount the entire World Wide Web!
+
+Click this link [http://localhost:8080/tutorial/basics/part3b/www.google.com|http://localhost:8080/tutorial/basics/part3b/www.google.com]
+
+Try changing the the ending to any web address. For the philosophers out 
+there [http://localhost:8080/tutorial/basics/part3b/localhost:1060/book/view/book:tutorial:basics/doc:tutorial:basics:part3|here's]
+this very page in the mounted space. Weird.
+
+Notice that styling is generally relatively linked and breaks when we relocate 
+the resources - the designers of most web pages don't anticipate someone 
+mounting them!
+
+
+==Analysis==
+
+Neither of the demos above require any physical-level code.  They are 
+accomplished by using the [[doc:logicalreference:module:standard:logical:mapper|mapper]]
+overlay. Let's deconstruct the mapper declaration...
+
+===mapper===
+
+{xml}
+<mapper>
+	<config>
+			<!--Mapper Configuration-->
+	</config>
+	<space>
+		<!-- Wrapped Space -->
+	</space>
+</mapper>
+{/xml}
+
+The mapper requires two parameters.  A ''config'', specifying how the mapper 
+should resolve route requests, and a ''space'' declaration which the mapper 
+overlay wraps.   All requests that satisfy the mapper's configuration are 
+issued into the wrapped space.
+
+
+
+===config===
+
+Lets look at the config in detail...
+ 
+{xml}
+<config>
+<endpoint>
+	<grammar>
+		<simple>res:/tutorial/basics/part3b/{path}</simple>
+	</grammar>
+	<request>
+		<identifier>file:///[[arg:path]]</identifier>
+	</request>
+</endpoint>
+</config>
+{/xml}
+
+You can think of the mapper as a way to specify virtual endpoints. 
+We see that in the config we have an <endpoint> declaration.
+The endpoint has a [[doc:logicalreference:module:standard:logical:grammar|grammar]] -  
+here we're using a simple REST-like path, so we're using the [[doc:logicalreference:module:standard:logical:grammar#Simple_Grammars|Simple Grammar]]
+
+Unlike the previous part this endpoint does not bind requests to a 
+physical class invocation.  Instead a request that matches the grammar causes 
+the mapper overlay to construct a ''new'' request.  The construction rules for the 
+new request are specified in the ''<request>'' declaration.
+
+The mapper uses the standard NetKernel [[doc:logicalreference:module:standard:logical:declarative:request:syntax|declarative request syntax]].
+In brief, this example has a grammar that provides a named pattern match "path".  
+We see that the declarative request is constructed and has an identifier 
+starting with '''file:///''' - the double square brackets around arg:path are 
+the syntax for inline substitution.  In this case the "path"  part of request 
+identifier is inserted into the string template for the request.
+
+===Example===
+
+The external URL:
+
+http://localhost:8080/tutorial/basics/part3/home/user/hello.txt
+
+Becomes the internal request:
+
+'''res:/tutorial/basics/part3/home/user/hello.txt'''
+
+Which matches the grammar.  Where "home/user/hello.txt" is the value of the 
+path match.  Which means that the constructed request ends up being...
+
+'''file:///home/user/hello.txt'''
+
+So, returning to the discussion, as its name suggests the mapper allows us to 
+map a request for one resource identifier to a request for another identifier.  
+We'll see that this is a very powerful tool and allows us to implement many 
+valuable patterns.
+
+We said earlier that the mapper issues its constructed request into the 
+wrapped space.  In this case the space contains a single import... 
+
+===space for file: scheme===
+{xml}
+<import>
+	<uri>urn:org:netkernel:ext:layer1</uri>
+</import>
+{/xml}
+
+It probably won't surprise you that the imported layer1 space provides an 
+endpoint that supports the [[doc:layer1:schemes:file|file:]] URI scheme.  
+Therefore we see the full story - with a simple mapper rule we have mapped 
+your complete filesystem into the ROC address space.
+
+===Mounting the Web===
+
+The second demo shows how we can mount the World Wide Web into the ROC address 
+space. The broad pattern is very similar only instead of mapping the request to 
+the file: scheme the mapper instead maps to the http:// scheme and the wrapped 
+space now imports...
+
+===space for http: scheme===
+{xml}
+<import>
+	<uri>urn:org:netkernel:client:http</uri>
+</import>
+{/xml}
+
+which, provides the [[doc:client:http:httpGet|active:httpGet]] endpoint that 
+supports SOURCE requests and issues them as HTTP GET requests - as a convenience 
+the endpoint aliases http:// so we can issue simple web GET requests.  
+
+==Summary==
+
+In this section we showed how some very old patterns can be applied in general 
+ROC.  We introduced the mapper and showed how it provides a powerful means of 
+declaratively mapping requests.
+
+''Q.E.D''  we mapped your file system into the ROC address space.  We also 
+relocated the entire World Wide Web and nobody noticed!
+  
+===Exercises===
+
+#How would you mount the resources in a Java jar file?
+#How would you construct a declarative request to invoke active:httpGet using its full syntax?
+
+===Big Picture Thoughts===
+
+In set theory the mapper is mapping between bounded (often infinite) sets.  
+Mathematically it is formally a [http://en.wikipedia.com/%77iki/Function_(mathematics)|function].   
+Much of the power of ROC and its ability to simplify software is that rather 
+than dealing with a single instance it permits you to create general 
+treatments over a set of all possible values.  No matter how large the Web gets 
+our example maps the bounded infinite set of potential URLs and can handle it.   
+The mapper is a very powerful tool and it pays to learn some of its possibilities 
+by playing with it.
+
+One further thought - the configuration of a mapper is itself just a resource.  
+It can easily be dynamically generated...
+
+[[doc:tutorial:basics:part4|Next Section ->]]

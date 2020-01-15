@@ -1,0 +1,8 @@
+url=context.source("httpRequest:/url", String.class);
+method=context.source("httpRequest:/method", String.class);
+result="Hello Script World"+
+							"\nRequest Identifier = "+context.getThisRequest().getIdentifier()+
+							"\npath argument = "+context.getThisRequest().getArgumentValue("path")+
+							"\nHTTP Method = "+method+
+							"\nHTTP URL = "+url;
+context.createResponseFrom(result);

@@ -1,0 +1,42 @@
+=ROC Basics Tutorial=
+
+This book provides a step-by-step introduction to the building blocks
+of [[doc:roc:nutshell|Resource Oriented Computing]] (ROC).
+
+It shows how the ROC abstraction supports a range of standard patterns.  Each of which may be achieved
+with a very simple, very uniform set of basic building blocks.
+
+==JavaDoc Links==
+
+In the text you will see links such as: {search}INKFRequestContext{/search}.
+
+These links will only work when you have generated and indexed the JavaDoc for the system.
+
+So that you can examine the APIs we link to, run "Generate All" in the [http:/tools/javadoc/|Javadoc] tool, then make sure to [http:/tools/search/fullIndex|reindex] the system
+content.
+
+==Source Code==
+
+All of the examples can be found in the '''urn:org:netkernel:tutorial:basics''' 
+module.  From a standard installation this will be located in the directory
+
+{java}[ install ]/modules/urn.org.netkernel.tutorial.basics/{/java}
+
+Where [ install ] is the place in your filesystem where you installed NetKernel.
+
+Each part of the tutorial has a corresponding <rootspace> defined in 
+the '''module.xml''' file.  For example, Part 1 discusses mapping a fileset to 
+a web path.  If you look in module.xml you will find the first rootspace is 
+called '''urn:org:netkernel:tutorial:basics:part1''' - this block of XML is 
+the complete definition of the part 1 demo address space.
+
+'''P.S.''' If this is your first time reading this and words like 
+'''rootspace''', '''mapping''', '''fileset''', '''address space''', etc. do not 
+make a lot of sense yet, do not worry, they will after we have gone through 
+[[doc:tutorial:basics:part1|Part 1]].
+
+==Acknowledgements==
+
+Grateful thanks go to Tom Geudens for reviewing this book, adding comments of encouragement
+to the reader in the early stages and teaching the author the basics of English grammar
+even though English is not his native language.
